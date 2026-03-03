@@ -9,22 +9,41 @@ This skill provides high-density, expert-level coding patterns and best practice
 
 ## How to use this skill
 
-When working on MONAI or Rectified Flow tasks, follow this order of reference:
-1. **Quick Links**: Check [references/official-links.md](references/official-links.md) for official documentation and latest tutorials.
+When working on MONAI or Rectified Flow tasks, follow this strict **Precision-First** workflow:
+
+1. **Quick Links**: Check [references/official-links.md](references/official-links.md) for official documentation.
 2. **Context Check**: If using public datasets (BraTS, MSD), read [references/datasets.md](references/datasets.md).
-3. **Implementation Patterns**: Reference the specialized documents for coding:
+3. **Spec-Before-Code (MANDATORY)**: Before writing any implementation, generate a **Technical Specification** for user approval. It must include:
+    - Input/Output Tensor Shapes (e.g., `(B, 1, 96, 96, 96)`).
+    - Specific MONAI APIs to be used (no re-implementing existing logic).
+    - A list of existing utility functions to reuse (check current workspace).
+4. **Reference Implementation Patterns**: Use these for coding:
     - **Data Transforms**: [references/transforms.md](references/transforms.md)
     - **Network Architectures**: [references/networks.md](references/networks.md)
     - **Generative Models**: [references/generation.md](references/generation.md)
     - **Rectified Flow**: [references/rectified-flow.md](references/rectified-flow.md)
     - **Segmentation**: [references/segmentation.md](references/segmentation.md)
-    - **Visualization**: [references/visualize.md](references/visualize.md)
-4. **Safety Check**: Always read [references/troubleshooting.md](references/troubleshooting.md) before finalizing any 3D imaging code.
+5. **Post-Implementation Validation**: Always include a `dummy_input` test to verify tensor flow.
+
+## Core Principles for Precision Coding
+
+### 1. Strict DRY (Don't Repeat Yourself)
+- **Zero Redundancy**: Never duplicate logic found in MONAI or the current workspace.
+- **Search-First**: Before writing any helper function, `/grep` for existing symbols. If found, import them.
+- **Complexity Budget**: Favor concise, readable code. If a function exceeds 50 lines, refactor into modular components.
+
+### 2. Native API Fidelity
+- **Factory-Only**: Use `Act`, `Norm`, `Conv` factories. Hardcoded `nn.Conv2d` is forbidden for 3D tasks.
+- **Standard Dictionary Mode**: Stick to `d` suffixed transforms for multimodal workflows.
+
+### 3. Progressive Refinement
+- **Atomic Commits**: Suggest small, focused changes over massive code dumps.
+- **Refactor on Edit**: When modifying a file, proactively remove dead code or outdated comments.
 
 ## Mandatory Validation Steps
-Whenever you generate a network or a full pipeline:
-1. **Shape Check**: Provide a small `dummy_input` test script to verify that the output shape matches expectations.
-2. **2D/3D Confirmation**: Explicitly state if the implementation is 2D or 3D.
+1. **Shape Check**: Provide a small `dummy_input` test script.
+2. **2D/3D Confirmation**: Explicitly state the spatial dimensionality.
+3. **Linter-Ready**: Code must pass `ruff` and `mypy` style checks (type annotations required).
 
 ## Advanced Search with MCP
 If the provided references are insufficient, use the `google_search` or `fetch` MCP tools to query the official MONAI documentation site using the links in `official-links.md`.

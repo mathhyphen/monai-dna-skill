@@ -64,3 +64,8 @@ This skill transforms your AI from a simple API caller into a senior architect c
 1. Copy the `monai-dna` folder to your OpenClaw skills directory.
 2. Restart the OpenClaw Gateway.
 3. Start coding with your enhanced AI assistant!
+
+## 2.0 升级：精准编码约束
+- ?? **规格驱动 (Spec-Driven)**: 强制 AI 在写代码前先写技术规格，杜绝冗余重复。
+- ?? **严格 DRY 原则**: 自动检索已有符号，禁止重复实现，强制 50 行重构规则。
+- ?? **原生 API 忠实度**: 深度绑定 MONAI 工厂模式，确保代码最优化。
