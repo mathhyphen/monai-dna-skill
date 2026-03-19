@@ -1,7 +1,7 @@
 interface:
   display_name: "MONAI DNA"
-  short_description: "MONAI medical imaging coding patterns"
-  default_prompt: "Use $monai-dna to design, implement, or review a MONAI-based medical imaging workflow."
+  short_description: "Strict MONAI-native medical AI workflows"
+  default_prompt: "Use $monai-dna to build a medical imaging project that follows MONAI structure and preserves the reference generative-model logic where applicable."
 
 policy:
   allow_implicit_invocation: true
