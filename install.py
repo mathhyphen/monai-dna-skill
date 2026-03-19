@@ -54,11 +54,11 @@ def install_claude() -> None:
 def install_codex() -> None:
     print("Starting MONAI DNA installation for Codex...")
     source_dir = Path(__file__).resolve().parent / "skills" / "monai-dna"
-    codex_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
-    target_dir = codex_home / "skills" / "monai-dna"
+    target_dir = Path.home() / ".agents" / "skills" / "monai-dna"
     target_dir.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source_dir, target_dir, dirs_exist_ok=True)
     print(f"\nInstallation complete. Skill copied to: {target_dir}")
+    print("Codex discovers user-installed skills from ~/.agents/skills/.")
 
 
 def parse_args() -> argparse.Namespace:

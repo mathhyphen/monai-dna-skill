@@ -107,13 +107,13 @@ monai-dna-skill/
 将 `skills/monai-dna/` 复制到：
 
 ```text
-$CODEX_HOME/skills/monai-dna/
+$HOME/.agents/skills/monai-dna/
 ```
 
-如果没有设置 `CODEX_HOME`，通常可使用：
+如果你想在当前仓库里本地试用，也可以复制到：
 
 ```text
-~/.codex/skills/monai-dna/
+.agents/skills/monai-dna/
 ```
 
 方式 2：使用安装脚本
@@ -233,13 +233,13 @@ monai-dna-skill/
 Option 1: copy the skill directory manually
 
 ```text
-$CODEX_HOME/skills/monai-dna/
+$HOME/.agents/skills/monai-dna/
 ```
 
-If `CODEX_HOME` is not set, the common location is:
+If you want to test it only inside the current repository, you can also copy it to:
 
 ```text
-~/.codex/skills/monai-dna/
+.agents/skills/monai-dna/
 ```
 
 Option 2: use the installer

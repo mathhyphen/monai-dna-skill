@@ -1,13 +1,13 @@
 # MONAI Project Guidelines
 
 ## 🧬 DNA References
-Project core patterns are stored in .Codex/references/ and skills/monai-dna/references/.
+Project core patterns are stored in `skills/monai-dna/references/`.
 Always refer to these documents to maintain native MONAI coding style:
-- Transforms: .Codex/references/transforms.md
-- Networks: .Codex/references/networks.md
-- Generative: .Codex/references/generation.md
-- Segmentation: .Codex/references/segmentation.md
-- Rectified Flow: .Codex/references/rectified-flow.md
+- Transforms: `skills/monai-dna/references/transforms.md`
+- Networks: `skills/monai-dna/references/networks.md`
+- Generative: `skills/monai-dna/references/generation.md`
+- Segmentation: `skills/monai-dna/references/segmentation.md`
+- Rectified Flow: `skills/monai-dna/references/rectified-flow.md`
 
 ## 🛠 Commands
 - Test: `pytest tests/`
