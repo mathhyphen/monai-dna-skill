@@ -1,0 +1,7 @@
+interface:
+  display_name: "MONAI DNA"
+  short_description: "MONAI medical imaging coding patterns"
+  default_prompt: "Use $monai-dna to design, implement, or review a MONAI-based medical imaging workflow."
+
+policy:
+  allow_implicit_invocation: true
