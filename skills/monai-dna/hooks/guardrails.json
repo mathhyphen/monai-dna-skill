@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "pre_tool_use": [
+    {
+      "name": "destructive_data_guard",
+      "description": "Prevents accidental deletion of medical imaging data directories. Datasets, images, labels, and NIfTI/DICOM files are extremely high-value and often irreplaceable. This guard blocks recursive remove commands targeting paths that likely contain training data.",
+      "matcher": {
+        "tool_name": "Bash",
+        "params_match": {
+          "command": "rm\\s+-rf\\s+.*(data|images|labels|dataset|nii|nifti|dcm)"
+        }
+      },
+      "action": "block",
+      "message": "Destructive data guard triggered: You are attempting to recursively delete a path that appears to contain medical imaging data (data/, images/, labels/, dataset/, nii/, nifti/, or dcm/). Medical imaging datasets are extremely high-value and often irreplaceable. If you must proceed, use a more specific path and avoid recursive deletion. Consider moving files to a trash location instead of permanent deletion."
+    },
+    {
+      "name": "generic_pytorch_replacement_guard",
+      "description": "Prevents replacing MONAI factory calls (Act, Norm, Conv, Pool, AutoEncoder, VariationalAutoEncoder, DiffusionModelUNet) with raw torch.nn equivalents. MONAI factories provide dimension-safe abstractions that work correctly for both 2D and 3D spatial dimensions. Replacing them with hardcoded torch.nn.Conv2d/Conv3d or BatchNorm breaks spatial_dims contracts and causes hard-to-debug shape mismatches in 3D medical imaging pipelines.",
+      "matcher": {
+        "tool_name": "Edit",
+        "params_match": {
+          "old_string": "(torch\\.nn\\.(Conv2d|Conv3d|BatchNorm|InstanceNorm|MaxPool2d|MaxPool3d|AvgPool2d|AvgPool3d|GroupNorm|LayerNorm|Linear|Dropout)|nn\\.(Conv2d|Conv3d|BatchNorm|InstanceNorm|MaxPool2d|MaxPool3d|AvgPool2d|AvgPool3d|GroupNorm|LayerNorm|Linear|Dropout))"
+        }
+      },
+      "action": "block",
+      "message": "Generic PyTorch replacement guard triggered: You are replacing or introducing a raw torch.nn layer (e.g., Conv2d/Conv3d, BatchNorm, MaxPool2d/3d) instead of using MONAI's factory functions (Act, Norm, Conv, Pool from monai.networks.layers). MONAI factories automatically handle spatial_dims=2 vs spatial_dims=3, which is critical for medical imaging. If you have a concrete, stated reason why the MONAI factory is unsuitable (e.g., performance, custom behavior), add an explicit inline comment explaining why before proceeding. Alternatively, use monai.networks.layers.Conv, Norm, Pool, Act which preserve the dimension-safe abstraction."
+    },
+    {
+      "name": "diffusion_objective_mismatch_guard",
+      "description": "Prevents changing the diffusion prediction objective (flow/noise/epsilon/clean) mid-training without synchronizing the scheduler. The prediction objective is tightly coupled with the noise scheduler's step function. Switching from noise prediction to flow prediction (or vice versa) without updating the scheduler will produce garbage generated images and silently corrupt the training objective.",
+      "matcher": {
+        "tool_name": "Edit",
+        "params_match": {
+          "new_string": "predict\\s*[=:].*['\"](flow|noise|epsilon|clean)['\"]"
+        }
+      },
+      "action": "block",
+      "message": "Diffusion objective mismatch guard triggered: You are changing the prediction objective type (predict='flow', 'noise', 'epsilon', or 'clean') in a diffusion or rectified flow model. This objective must match what the scheduler expects — switching from noise prediction to flow prediction (or any other combination) without updating the corresponding DDPMScheduler/DDIMScheduler/RectifiedFlow scheduler will cause the training objective to mismatch the sampling loop, producing invalid models. Please update the scheduler configuration in the same commit before changing the prediction objective."
+    },
+    {
+      "name": "spatial_dims_inconsistency_guard",
+      "description": "Detects spatial_dims inconsistency across model initialization, transforms, and inferer before running training. Inconsistent spatial_dims (e.g., model built with spatial_dims=3 but transforms using spatial_dims=2) causes silent shape mismatches that crash at runtime or produce wrong results. This guard performs a simple regex scan of relevant Python files to flag mismatches before they cause wasted GPU hours.",
+      "matcher": {
+        "tool_name": "Bash",
+        "params_match": {
+          "command": "python.*train|python.*run|python.*main"
+        }
+      },
+      "action": "block",
+      "message": "Spatial dims inconsistency guard triggered: Before running training, Claude Code scanned the relevant files and detected a potential spatial_dims mismatch (e.g., model init uses spatial_dims=3 but transforms or inferer use spatial_dims=2). Consistent spatial_dims is critical — MONAI's Conv/Norm/Pool factories and all dictionary transforms are spatial_dims-aware. Please audit the codebase: search for 'spatial_dims=' in model files, transform files, and inferer files. Ensure all are 2 for 2D or all are 3 for 3D before running training."
+    },
+    {
+      "name": "unsafe_checkpoint_overwrite_guard",
+      "description": "Prevents torch.save from overwriting best_model.pt without creating a backup. Overwriting the best checkpoint without a backup risks losing the best model state if the new save is corrupted or interrupted. In medical imaging, the best model may represent hours or days of GPU training.",
+      "matcher": {
+        "tool_name": "Edit",
+        "params_match": {
+          "new_string": "torch\\.save.*best_model\\.pt"
+        }
+      },
+      "action": "block",
+      "message": "Unsafe checkpoint overwrite guard triggered: You are saving a checkpoint to best_model.pt without creating a backup first. If this save is interrupted or corrupted, the best model state will be permanently lost — especially painful after long 3D training runs. Please save to best_model.pt.tmp first, verify the file is valid (torch.load with weights_only=False), then atomically rename to best_model.pt. Alternatively, always keep the previous best_model.pt as best_model.pt.bak before overwriting."
+    },
+    {
+      "name": "label_interpolation_guard",
+      "description": "Blocks Spacingd/Orientationd/Resized transforms that use bilinear or bicubic interpolation on label keys. Label images contain discrete integer class indices. Using bilinear or bicubic interpolation on labels introduces non-integer values that corrupt segmentation masks, producing fractional class labels that crash AsDiscreted or produce nonsensical metrics. Labels must always use mode='nearest'.",
+      "matcher": {
+        "tool_name": "Edit",
+        "params_match": {
+          "new_string": "(Spacingd|Orientationd|Resized|RandRotated|RandZoomd|RandAffined).*mode.*=.*['\"](bilinear|bicubic|area)['\"].*(label|seg)"
+        }
+      },
+      "action": "block",
+      "message": "Label interpolation guard triggered: You are applying bilinear, bicubic, or area interpolation mode to a label or segmentation key in a spatial transform (Spacingd, Orientationd, Resized, RandRotated, RandZoomd, or RandAffined). Label images contain discrete integer class indices (e.g., 0=background, 1=organ, 2=tumor). Interpolation creates non-integer values that corrupt the segmentation mask, producing fractional labels that crash AsDiscreted thresholding or produce invalid metrics. Always use mode=('bilinear', 'nearest') — image gets bilinear, label gets nearest — or mode='nearest' for both if in doubt."
+    },
+    {
+      "name": "amp_absence_warning_for_3d",
+      "description": "Warns when a 3D training script does not use automatic mixed precision (AMP) with torch.cuda.amp.autocast and GradScaler. 3D medical imaging models with spatial_dims=3 consume significantly more GPU memory than 2D. Without AMP, training batch sizes are severely limited and training is much slower on Ampere+ GPUs. This is a warning-only hook to educate without blocking.",
+      "matcher": {
+        "tool_name": "Bash",
+        "params_match": {
+          "command": "python.*train|python.*run|python.*main"
+        }
+      },
+      "action": "warn",
+      "message": "AMP absence warning for 3D: The training script appears to run 3D volumes (spatial_dims=3 detected) but does not use torch.cuda.amp.autocast and GradScaler. For 3D medical imaging, AMP typically reduces GPU memory usage by ~40-50%, allowing 2x larger batch sizes and faster training on Ampere/Ada GPUs. Wrap the forward pass with 'with autocast():' and use scaler.scale(loss).backward() / scaler.step(optimizer) / scaler.update(). This is a warning only — training will proceed, but you are likely leaving significant performance on the table."
+    }
+  ]
+}
